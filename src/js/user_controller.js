@@ -1,18 +1,16 @@
+
 import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt';
-import nodemailer from 'nodemailer';
-import mongoose from 'mongoose'
+import Foo from './testclass';
+import { UserModel, PasswordRecoveryModel } from './models';
+import { sendEmail } from './email';
 
-export default function (router, mongoose1) {
+//import { schema } from './models';
+export default function (router, mongoose) {
 
-	let Schema = mongoose.Schema;
-	const User = mongoose.model('User', new Schema({
-		firstName: String,
-		lastName: String,
-		email: {type: String, unique: true},
-		password: String
-	}));
-
+	let User = UserModel(mongoose);
+	let PasswordRecovery = PasswordRecoveryModel(mongoose);
+//	let User = schema(mongoose, "User");
 	const saltRounds = 10;
 
 	router.get('/profile', (req, res, next) => {
@@ -70,19 +68,18 @@ export default function (router, mongoose1) {
 	})
 
 	router.get('/authentication/login', (req, res) => {
-		res.render('login', {title: "Login Page"});
+		res.render('login', {title: "Login Page", csrfToken: req.csrfToken()});
 	});
 
 	router.post('/authentication/login', (req, res) => {
 
-		const param_email = req.body.email;
+		const param_email = req.body.email.trim().toLowerCase();
 		const param_password = req.body.password;
 		let errorMessage = "";		
 
 		User.findOne({email: param_email}, (err, user) => {
 			let errorMessage = "";
 			let IP = req.headers['x-forwarded-for']; 
-			console.log(IP);
 			if (err) {
 				errorMessage = err.Message;
 				res.render('login', {error: errorMessage});
@@ -94,31 +91,64 @@ export default function (router, mongoose1) {
 				bcrypt.compare(param_password, user.password, function(err, compared) {
 				  // res == false
 					console.log(param_password, user.password, compared)
-				  if (compared === false || compared === undefined) {
-					  res.render('login',{success: false,error:"Password incorrect"})
-				  } else {
-			   jwt.sign(user.toJSON(), 'superSecret', { expiresIn: '25d' }, function(err, token) {    
-					  if (err) {
-							  res.render('login',{
-								success: false,
-								error: "Problem issuing token",
-								token: null,
-							  });
-						  } else {
-							res.cookie('Token', token, {maxAge: 3600000, httpOnly: true});
-							res.redirect("/authentication/home")
-						  }                             
-					  }); 
-				  }
-			  }); 
-			}
-	
+				if (compared === false || compared === undefined) {
+					  res.render('login',{success: false,error:"Password incorrect", csrfToken: req.csrfToken()})
+				} else {
+					if (user.IPs) { 
+						console.log(user.IPs.indexOf(IP));
+						if (user.IPs.indexOf(IP) === -1){
+							user.IPs = user.IPs + "," + IP;
+						}
+					} else {
+						user.IPs = IP;
+					}
+					console.log("made it here");
+					user.save((err)=>{
+						if (err) { 
+						  console.log("error ${0}", err);
+						  res.render('login',{
+							success: false,
+							error: "Problem issuing token",
+							csrfToken: req.csrfToken(),
+						  });
+						} else {
+							generateJWT(user,(token, error) => {
+								if (error !== null ) {
+								  res.render('login',{
+									success: false,
+									error: "Problem issuing token",
+									token: null,
+								  });
+								} else {
+									console.log("we should be good");
+									res.cookie('Token', token,
+									 {maxAge: 3600000, httpOnly: true});
+									res.redirect("/authentication/home")
+								}
+							})
+						}						
 
-		}); 
+					});
+								
+ 
+			   	}
+
+		  });
+		} 
 	});
-
+});
+	function generateJWT(user, callback) {
+		jwt.sign(user.toJSON(), 'superSecret', 
+		{ expiresIn: '25d' }, function(err, token) {    
+		  if (err) {
+			callback(null, err);
+		  } else {
+			callback(token, null);
+		  }                             
+		}); 
+	}
 	router.get('/authentication/register', (req, res)=> {
-		res.render('register', {title:"register page"})
+		res.render('register', {title:"register page", csrfToken: req.csrfToken()})
 	});
 
 	router.post('/authentication/register', (req, res, next) => {
@@ -127,17 +157,15 @@ export default function (router, mongoose1) {
 	  const email = req.body.email
 	  const firstName = req.body.firstName
 	  const lastName = req.body.lastName
-
+	  const IP = req.headers['x-forwarded-for']; 
+	  
 	  if (password !== passwordConfirm) {
 		res.render('register', {
 		  success:false,
 		  message: "Passwords don't match",      
 		})
 	  } else {
-
-
-		bcrypt.hash(password, saltRounds, function(err, hash) {
-		   
+		bcrypt.hash(password, saltRounds, function(err, hash) {		   
 		  if (err) {
 			return res.render('register',{
 					success: false,
@@ -152,11 +180,12 @@ export default function (router, mongoose1) {
 					lastName: lastName  
 			  }, (user) => {
 				if (!user) {
-				  var newUser = new User({
+				  let newUser = new User({
 					email: email,
 					password: hash,
 					firstName: firstName,
-					lastName: lastName
+					lastName: lastName,
+					IPs: IP,
 				  })
 				
 				  newUser.save((err)=> {
@@ -167,19 +196,31 @@ export default function (router, mongoose1) {
 							errorMessage = "This email already exists, try logging in";
 							res.render('register', {error: errorMessage});
 						}
-					} else {
-						jwt.sign(newUser.toJSON(), 'superSecret', 
-							{ expiresIn: '25d' }, function(err, token) {
-							
-							res.cookie('Token', token, {maxAge: 3600000, httpOnly: true});
-							res.render('home',{
-								success: true,
-								message: "Enjoy your token",
-								token: token
-							});
-						})
+					} else {						
+						generateJWT(newUser,(token, error) => {
+								if (error !== null ) {
+								  res.render('register',{
+									success: false,
+									error: "Problem issuing token",
+									token: null,
+								  });
+								} else {
+									console.log("we should be good");
+									res.cookie('Token', token,
+									 {maxAge: 3600000, httpOnly: true});
+									sendEmail("fredp613@gmail.com", 
+										"Registered", "Thank you for registering")							
+									res.redirect('/authentication/home');
+									//res.render('home',{
+									//	success: true,
+									//	message: "Enjoy your token",
+									//	token: token
+									//});
+								}
+							})
+
 					}
-				  });
+				 });
 				} else {
 					res.render('register',{
 						  success: false,
@@ -218,63 +259,63 @@ export default function (router, mongoose1) {
 		})    
 	})
 
-	router.post('/authentication/recoverPassword', (req, res, next) => {
+	router.get('/authentication/recover', (req, res, next)=>{
+		res.render('recover', {Title: "Recover Password", csrfToken: req.csrfToken()});
+	});
+
+	router.post('/authentication/recover', (req, res, next) => {
 	  //send email and if email success alert user then show a form
 	  const randomstring = Math.random().toString(36).slice(-8);
 
-	  const requestingEmail = req.body.user.email;
+	  const requestingEmail = req.body.email.trim().toLowerCase();
 
-	  console.log(process.env.EMAIL, process.env.EMAIL_PWD)
 
-	  db.PasswordRecovery.destroy({ where: { email: requestingEmail }}).then(()=>{
-				db.PasswordRecovery.create({
-				  email: requestingEmail,
-				  tempPassword: randomstring,
-				}).then((pr)=>{
-					if (pr) {
-						const transporter = nodemailer.createTransport({
-							service: 'Gmail',
-							auth: {
-								user: process.env.EMAIL,
-								pass: process.env.EMAIL_PWD,
-							}
-						})
-
-						const mailOptions = {
-						  from: process.env.EMAIL, // sender address
-						  to: requestingEmail, // list of receivers
-						  subject: 'SUMATRA: Password Recovery', // Subject line
-						  text: "This is your temporary password: " + randomstring //, // plaintext body
-						  // html: '<b>Hello world ✔</b>' // You can choose to send an HTML body instead
-						};
-
-						transporter.sendMail(mailOptions, function(error, info){
-							if(error){          
-								res.json({
-								  success: false,
-								  reponse: error,
-								})
-							} else {          
-								res.json({
-								  success: true,
-								  reponse: info.response,
-								})
-								
-							};
-						});
-
-					} else {
-					  res.json({
-						  success: false,
-						  reponse: "something went wrong",
-					  })
-
+		User.findOne({email: requestingEmail}, (err, user) => {
+			let errorMessage = "";
+			if (err) {
+				errorMessage = err.Message;
+				res.render('recover', {error: errorMessage, csrfToken: req.csrfToken()});
+			}
+			if (!user) {
+			    errorMessage = "this email does not exist, please try again";
+				res.render('recover', {error: errorMessage, csrfToken: req.csrfToken()});
+			}
+			if (user) {
+				PasswordRecovery.remove({email: requestingEmail}, (err)=>{
+					if (err) {
+						res.render('recover', {error: "Something went wrong", 
+						csrfToken: req.csrfToken()});
 					}
-				})
+					let newPasswordRecovery = new PasswordRecovery({
+							email: requestingEmail,
+							tempPassword: randomstring
+					});
+					newPasswordRecovery.save((err)=>{
+						if (err) {
+							res.render('recover', 
+							{error: "something went wrong try again later",
+								 csrfToken:req.csrfToken()});
+						} else {
+							sendEmail("fredp613@gmail.com",
+								"Password recovery",
+								"temporary password is:" + randomstring); 
+							res.redirect('/authentication/recoverconfirm');	
+						}
+							
+					});	
 
-	  })
+					
+				});
+									
+			}
+		});
 	  
 	})
+
+	router.get('/authentication/recoverconfirm', (req, res, next) => {
+		res.render('recoverconfirm', {Title: "Confirm temporary password"});
+
+	});
 	  
 	router.put('/authentication/recoverconfirm', (req, res, next) => {
 	  

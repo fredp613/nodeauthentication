@@ -52,10 +52,35 @@ var _authenticate = require('./authenticate');
 
 var _authenticate2 = _interopRequireDefault(_authenticate);
 
+var _dotenv = require('dotenv');
+
+var _dotenv2 = _interopRequireDefault(_dotenv);
+
+require('babel-polyfill');
+
+var _csurf = require('csurf');
+
+var _csurf2 = _interopRequireDefault(_csurf);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+_dotenv2.default.config();
 
 var app = (0, _express2.default)(),
     PORT = "3006";
+
+//set up for CSRF proection
+var csrfProtection = (0, _csurf2.default)({ cookie: true });
+var parseForm = _bodyParser2.default.urlencoded({ extended: false });
+
+//let api = createApiRouter()
+//function createApiRouter() {
+//	var router = new express.Router();
+//	router.post...
+//	return router
+//}
+//app.use('/api', api) <--load api routes before eveyrthing below so it ignores csrf etc.
+
 
 //view engine setup
 app.set('views', _path2.default.join(__dirname, '../../views'));
@@ -75,13 +100,13 @@ if (app.get('env') === 'production') {
 	app.set('trust proxy', 1); //trust first proxy
 	sess.cookie.secure = true; //serve secure cookies (https)
 }
-
 app.use((0, _morgan2.default)('dev'));
 app.use(_bodyParser2.default.json());
 app.use(_bodyParser2.default.urlencoded({ extended: false }));
 app.use((0, _cookieParser2.default)());
 app.use(_express2.default.static(_path2.default.join(__dirname, 'public')));
 //app.use(session(sess));
+app.use(csrfProtection);
 app.use((0, _authenticate2.default)(_mongoose2.default));
 
 (0, _countries2.default)(app);

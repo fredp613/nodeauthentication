@@ -4,16 +4,11 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-exports.default = function (router, mongoose1) {
+exports.default = function (router, mongoose) {
 
-	var Schema = _mongoose2.default.Schema;
-	var User = _mongoose2.default.model('User', new Schema({
-		firstName: String,
-		lastName: String,
-		email: { type: String, unique: true },
-		password: String
-	}));
-
+	var User = (0, _models.UserModel)(mongoose);
+	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
+	//	let User = schema(mongoose, "User");
 	var saltRounds = 10;
 
 	router.get('/profile', function (req, res, next) {
@@ -70,19 +65,18 @@ exports.default = function (router, mongoose1) {
 	});
 
 	router.get('/authentication/login', function (req, res) {
-		res.render('login', { title: "Login Page" });
+		res.render('login', { title: "Login Page", csrfToken: req.csrfToken() });
 	});
 
 	router.post('/authentication/login', function (req, res) {
 
-		var param_email = req.body.email;
+		var param_email = req.body.email.trim().toLowerCase();
 		var param_password = req.body.password;
 		var errorMessage = "";
 
 		User.findOne({ email: param_email }, function (err, user) {
 			var errorMessage = "";
 			var IP = req.headers['x-forwarded-for'];
-			console.log(IP);
 			if (err) {
 				errorMessage = err.Message;
 				res.render('login', { error: errorMessage });
@@ -95,18 +89,39 @@ exports.default = function (router, mongoose1) {
 					// res == false
 					console.log(param_password, user.password, compared);
 					if (compared === false || compared === undefined) {
-						res.render('login', { success: false, error: "Password incorrect" });
+						res.render('login', { success: false, error: "Password incorrect", csrfToken: req.csrfToken() });
 					} else {
-						_jsonwebtoken2.default.sign(user.toJSON(), 'superSecret', { expiresIn: '25d' }, function (err, token) {
+						if (user.IPs) {
+							console.log(user.IPs.indexOf(IP));
+							if (user.IPs.indexOf(IP) === -1) {
+								user.IPs = user.IPs + "," + IP;
+							}
+						} else {
+							user.IPs = IP;
+						}
+						console.log("made it here");
+						user.save(function (err) {
 							if (err) {
+								console.log("error ${0}", err);
 								res.render('login', {
 									success: false,
 									error: "Problem issuing token",
-									token: null
+									csrfToken: req.csrfToken()
 								});
 							} else {
-								res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
-								res.redirect("/authentication/home");
+								generateJWT(user, function (token, error) {
+									if (error !== null) {
+										res.render('login', {
+											success: false,
+											error: "Problem issuing token",
+											token: null
+										});
+									} else {
+										console.log("we should be good");
+										res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
+										res.redirect("/authentication/home");
+									}
+								});
 							}
 						});
 					}
@@ -114,9 +129,17 @@ exports.default = function (router, mongoose1) {
 			}
 		});
 	});
-
+	function generateJWT(user, callback) {
+		_jsonwebtoken2.default.sign(user.toJSON(), 'superSecret', { expiresIn: '25d' }, function (err, token) {
+			if (err) {
+				callback(null, err);
+			} else {
+				callback(token, null);
+			}
+		});
+	}
 	router.get('/authentication/register', function (req, res) {
-		res.render('register', { title: "register page" });
+		res.render('register', { title: "register page", csrfToken: req.csrfToken() });
 	});
 
 	router.post('/authentication/register', function (req, res, next) {
@@ -125,6 +148,7 @@ exports.default = function (router, mongoose1) {
 		var email = req.body.email;
 		var firstName = req.body.firstName;
 		var lastName = req.body.lastName;
+		var IP = req.headers['x-forwarded-for'];
 
 		if (password !== passwordConfirm) {
 			res.render('register', {
@@ -132,9 +156,7 @@ exports.default = function (router, mongoose1) {
 				message: "Passwords don't match"
 			});
 		} else {
-
 			_bcrypt2.default.hash(password, saltRounds, function (err, hash) {
-
 				if (err) {
 					return res.render('register', {
 						success: false,
@@ -149,33 +171,46 @@ exports.default = function (router, mongoose1) {
 						lastName: lastName
 					}, function (user) {
 						if (!user) {
-							var newUser = new User({
-								email: email,
-								password: hash,
-								firstName: firstName,
-								lastName: lastName
-							});
+							(function () {
+								var newUser = new User({
+									email: email,
+									password: hash,
+									firstName: firstName,
+									lastName: lastName,
+									IPs: IP
+								});
 
-							newUser.save(function (err) {
-								var errorMessage = "";
-								if (err) {
-									errorMessage = "there was an error try again";
-									if (err.code === 11000) {
-										errorMessage = "This email already exists, try logging in";
-										res.render('register', { error: errorMessage });
-									}
-								} else {
-									_jsonwebtoken2.default.sign(newUser.toJSON(), 'superSecret', { expiresIn: '25d' }, function (err, token) {
-
-										res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
-										res.render('home', {
-											success: true,
-											message: "Enjoy your token",
-											token: token
+								newUser.save(function (err) {
+									var errorMessage = "";
+									if (err) {
+										errorMessage = "there was an error try again";
+										if (err.code === 11000) {
+											errorMessage = "This email already exists, try logging in";
+											res.render('register', { error: errorMessage });
+										}
+									} else {
+										generateJWT(newUser, function (token, error) {
+											if (error !== null) {
+												res.render('register', {
+													success: false,
+													error: "Problem issuing token",
+													token: null
+												});
+											} else {
+												console.log("we should be good");
+												res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
+												(0, _email.sendEmail)("fredp613@gmail.com", "Registered", "Thank you for registering");
+												res.redirect('/authentication/home');
+												//res.render('home',{
+												//	success: true,
+												//	message: "Enjoy your token",
+												//	token: token
+												//});
+											}
 										});
-									});
-								}
-							});
+									}
+								});
+							})();
 						} else {
 							res.render('register', {
 								success: false,
@@ -215,57 +250,52 @@ exports.default = function (router, mongoose1) {
 		});
 	});
 
-	router.post('/authentication/recoverPassword', function (req, res, next) {
+	router.get('/authentication/recover', function (req, res, next) {
+		res.render('recover', { Title: "Recover Password", csrfToken: req.csrfToken() });
+	});
+
+	router.post('/authentication/recover', function (req, res, next) {
 		//send email and if email success alert user then show a form
 		var randomstring = Math.random().toString(36).slice(-8);
 
-		var requestingEmail = req.body.user.email;
+		var requestingEmail = req.body.email.trim().toLowerCase();
 
-		console.log(process.env.EMAIL, process.env.EMAIL_PWD);
-
-		db.PasswordRecovery.destroy({ where: { email: requestingEmail } }).then(function () {
-			db.PasswordRecovery.create({
-				email: requestingEmail,
-				tempPassword: randomstring
-			}).then(function (pr) {
-				if (pr) {
-					var transporter = _nodemailer2.default.createTransport({
-						service: 'Gmail',
-						auth: {
-							user: process.env.EMAIL,
-							pass: process.env.EMAIL_PWD
+		User.findOne({ email: requestingEmail }, function (err, user) {
+			var errorMessage = "";
+			if (err) {
+				errorMessage = err.Message;
+				res.render('recover', { error: errorMessage, csrfToken: req.csrfToken() });
+			}
+			if (!user) {
+				errorMessage = "this email does not exist, please try again";
+				res.render('recover', { error: errorMessage, csrfToken: req.csrfToken() });
+			}
+			if (user) {
+				PasswordRecovery.remove({ email: requestingEmail }, function (err) {
+					if (err) {
+						res.render('recover', { error: "Something went wrong",
+							csrfToken: req.csrfToken() });
+					}
+					var newPasswordRecovery = new PasswordRecovery({
+						email: requestingEmail,
+						tempPassword: randomstring
+					});
+					newPasswordRecovery.save(function (err) {
+						if (err) {
+							res.render('recover', { error: "something went wrong try again later",
+								csrfToken: req.csrfToken() });
+						} else {
+							(0, _email.sendEmail)("fredp613@gmail.com", "Password recovery", "temporary password is:" + randomstring);
+							res.redirect('/authentication/recoverconfirm');
 						}
 					});
-
-					var mailOptions = {
-						from: process.env.EMAIL, // sender address
-						to: requestingEmail, // list of receivers
-						subject: 'SUMATRA: Password Recovery', // Subject line
-						text: "This is your temporary password: " + randomstring //, // plaintext body
-						// html: '<b>Hello world ✔</b>' // You can choose to send an HTML body instead
-					};
-
-					transporter.sendMail(mailOptions, function (error, info) {
-						if (error) {
-							res.json({
-								success: false,
-								reponse: error
-							});
-						} else {
-							res.json({
-								success: true,
-								reponse: info.response
-							});
-						};
-					});
-				} else {
-					res.json({
-						success: false,
-						reponse: "something went wrong"
-					});
-				}
-			});
+				});
+			}
 		});
+	});
+
+	router.get('/authentication/recoverconfirm', function (req, res, next) {
+		res.render('recoverconfirm', { Title: "Confirm temporary password" });
 	});
 
 	router.put('/authentication/recoverconfirm', function (req, res, next) {
@@ -338,14 +368,16 @@ var _bcrypt = require('bcrypt');
 
 var _bcrypt2 = _interopRequireDefault(_bcrypt);
 
-var _nodemailer = require('nodemailer');
+var _testclass = require('./testclass');
 
-var _nodemailer2 = _interopRequireDefault(_nodemailer);
+var _testclass2 = _interopRequireDefault(_testclass);
 
-var _mongoose = require('mongoose');
+var _models = require('./models');
 
-var _mongoose2 = _interopRequireDefault(_mongoose);
+var _email = require('./email');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 ;
+
+//import { schema } from './models';
