@@ -1,71 +1,13 @@
-
 import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt';
-import Foo from './testclass';
-import { UserModel, PasswordRecoveryModel } from './models';
+import { UserModel } from './models';
 import { sendEmail } from './email';
 
-//import { schema } from './models';
-export default function (router, mongoose) {
-
+export default function (router, mongoose, rootPath) {
+	
 	let User = UserModel(mongoose);
-	let PasswordRecovery = PasswordRecoveryModel(mongoose);
-//	let User = schema(mongoose, "User");
+
 	const saltRounds = 10;
-
-	router.get('/profile', (req, res, next) => {
-	   User.findOne({
-		  where: {email: req.body.user.email},
-		  attributes: ['email']
-	   }).then((user)=> {
-		  if (!user) {
-			  res.render('home', json({
-				 success: false,
-				 message: "Problem finding user",
-				 user: null
-			  }));
-		  } else {          
-			  res.render('profile', json({
-				 success: true,
-				 message: "User found",
-				 user: user
-			  }));
-		  }
-	   })   
-	})
-
-	router.put('/profile', (req, res, next) => {
-	   User.findOne({
-		  where: {email: req.body.user.email},
-		  attributes: ['email', 'firstName', 'lastName']
-	   }).then((user)=> {
-
-		  if (!user) {
-			  res.render('home',json({
-				 success: false,
-				 message: "Problem finding user",
-				 user: null
-			  }));
-		  } else {  
-			//UPDATE USER        
-			  User.update({
-				firstName: req.body.user.firstName,
-				lastName: req.body.user.lastName,
-			  }, {
-				where: {
-				  email: req.body.user.email
-				}
-			  }).then((user)=> {
-				  res.render('profile',json({
-					 success: true,
-					 message: "User UPDATED",
-					 user: user
-				  })); 
-			  });
-			  
-		  }
-	   })
-	})
 
 	router.get('/authentication/login', (req, res) => {
 		res.render('login', {title: "Login Page", csrfToken: req.csrfToken()});
@@ -154,7 +96,7 @@ export default function (router, mongoose) {
 	router.post('/authentication/register', (req, res, next) => {
 	  const password = req.body.password
 	  const passwordConfirm = req.body.passwordConfirm
-	  const email = req.body.email
+	  const email = req.body.email.trim().toLowerCase();
 	  const firstName = req.body.firstName
 	  const lastName = req.body.lastName
 	  const IP = req.headers['x-forwarded-for']; 
@@ -211,11 +153,6 @@ export default function (router, mongoose) {
 									sendEmail("fredp613@gmail.com", 
 										"Registered", "Thank you for registering")							
 									res.redirect('/authentication/home');
-									//res.render('home',{
-									//	success: true,
-									//	message: "Enjoy your token",
-									//	token: token
-									//});
 								}
 							})
 
@@ -235,13 +172,11 @@ export default function (router, mongoose) {
 
 	router.get('/authentication/logout', (req, res, next) => {
 	   res.clearCookie("Token");
-//	   req.session.destroy((err)=>{
 		   res.redirect('/authentication/login');
-//	   });
 	})
 
 	router.delete('/authentication/delete', (req, res, next)=> {
-		//clear cookies and or local storage  
+ 
 		db.User.destroy({
 		  where: {email: req.body.user.email}
 		}).then((success)=>{
@@ -260,15 +195,20 @@ export default function (router, mongoose) {
 	})
 
 	router.get('/authentication/recover', (req, res, next)=>{
+	    res.clearCookie("Token");
 		res.render('recover', {Title: "Recover Password", csrfToken: req.csrfToken()});
 	});
 
 	router.post('/authentication/recover', (req, res, next) => {
-	  //send email and if email success alert user then show a form
+
 	  const randomstring = Math.random().toString(36).slice(-8);
-
 	  const requestingEmail = req.body.email.trim().toLowerCase();
-
+	  let urlForRecovery = 
+		"http://fredp613.com/authentication/recoverconfirm?email=" + 
+	    	requestingEmail + 
+	    	"&safestring=" + 
+	    	randomstring;
+	  let encodedURI = encodeURIComponent(urlForRecovery);	
 
 		User.findOne({email: requestingEmail}, (err, user) => {
 			let errorMessage = "";
@@ -283,8 +223,8 @@ export default function (router, mongoose) {
 			if (user) {
 				PasswordRecovery.remove({email: requestingEmail}, (err)=>{
 					if (err) {
-						res.render('recover', {error: "Something went wrong", 
-						csrfToken: req.csrfToken()});
+						res.render('recover',
+						 {error: "Something went wrong", csrfToken: req.csrfToken()});
 					}
 					let newPasswordRecovery = new PasswordRecovery({
 							email: requestingEmail,
@@ -293,92 +233,72 @@ export default function (router, mongoose) {
 					newPasswordRecovery.save((err)=>{
 						if (err) {
 							res.render('recover', 
-							{error: "something went wrong try again later",
-								 csrfToken:req.csrfToken()});
+							{error: "something went wrong try again later", 
+								csrfToken: req.csrfToken()});
 						} else {
 							sendEmail("fredp613@gmail.com",
 								"Password recovery",
-								"temporary password is:" + randomstring); 
-							res.redirect('/authentication/recoverconfirm');	
-						}
-							
+								"click on the following link to reset your password:" 
+								+ urlForRecovery); 
+							res.render('recover', 
+								{status: "success", csrfToken: req.csrfToken()});	
+						}	
 					});	
-
-					
 				});
-									
-			}
-		});
-	  
+			};
+		}); 
 	})
 
 	router.get('/authentication/recoverconfirm', (req, res, next) => {
-		res.render('recoverconfirm', {Title: "Confirm temporary password"});
-
+		console.log(req.query.email + "-" + req.query.safestring);
+		res.render('recoverconfirm', {title: "Confirm temporary password",
+			email: req.query.email, csrfToken: req.csrfToken()});
 	});
 	  
-	router.put('/authentication/recoverconfirm', (req, res, next) => {
+	router.post('/authentication/recoverconfirm', (req, res, next) => {
 	  
-	  let paramTemp = req.body.user.tempPassword
-	  let paramPwd = req.body.user.password
-	  let paramPwdConfirm = req.body.user.passwordConfirmation
-	  let email = req.body.user.email
-
-	  db.PasswordRecovery.findOne({
-		where: {email:email}
-	  }).then((pr)=>{
-		  if (!pr) {
-			  res.json({
-				success: false,
-				message: "Something went wrong try again later",
-			  })
-		  } else {        
-				let temp = pr.tempPassword
-				if (paramTemp === temp) {
-				  if (paramPwd === paramPwdConfirm) {
-				   
-					  //UPDATE USER 
-					  bcrypt.hash(paramPwd, saltRounds, function(err, hash) {
-
-								if (err) {
-							  res.json({
-							success: false,
-								message: "Something went wrong try again later",
-								  })
-								} else {
-										  db.User.update({
-											password: hash,
-										  }, {
-											where: {
-											  email: req.body.user.email
-											}
-										  }).then((user)=> {
-											  db.PasswordRecovery.destroy({ where: { email: email }});
-											  res.json({
-												 success: true,
-												 message: "recovered successfully",
-												 user: user
-											  }) 
-										  });
-								}            
-					  });                 
-
-				  } else {
-					res.json({
-					  success: false,
-					  message: "new passwords don't match"
-					})
-				  }
-				} else {
-				  res.json({
-					success: false,
-					message: "temp password incorrect"
-				  })
-				}        
+	  let paramPwd = req.body.password;
+	  let paramPwdConfirm = req.body.passwordConfirm;
+	  let paramEmail = req.body.email
+	  
+	  if (paramPwd !== paramPwdConfirm) {
+		 return res.render('recoverconfirm', {title: "Confirm temporary password", 
+			error:"passwords don't match, try again", csrfToken: req.csrfToken()});
+	  }
+	  PasswordRecovery.findOne({email: paramEmail}, (err, pr) => {
+			if (err) {
+				return res.render('recoverconfirm', {title: "Confirm temporary password", 
+				error: err.Message, csrfToken: req.csrfToken()});
+		    }
+			if (!pr) {
+				return res.render('recoverconfirm', 
+				{title: "Confirm temporary password", error:
+				"somethign went wrong - not found", csrfToken: req.csrfToken()});
 			}
-		  
-	  })
-	 
-	})
+			if (pr) {
+				bcrypt.hash(paramPwd, saltRounds, function(err, hash) {	
+					User.findOne({email: paramEmail}, (err, user)=>{
+						if (err) {
+							return res.render('recoverconfrim', 
+							{error: "something went wrong", csrfToken: req.csrfToken()});
+						}
+						if (!user) {
+						  return res.render('recoverconfirm', 
+							{error: "user not found", csrfToken: req.csrfToken()});
+						}
+						User.update(user, {password: hash}, null, (err)=>{
+							if (err) {
+								return res.render('recoverconfirm', {
+									error: err.Message,
+									csrfToken: req.csrfToken(),
+								})
+							}
+							res.redirect('/authentication/home');
+						});
+					})
+				});		
+			}
+	  });
 
+	})
 };

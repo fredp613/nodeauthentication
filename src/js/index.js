@@ -38,31 +38,22 @@ let parseForm = bodyParser.urlencoded({extended: false});
 app.set('views', path.join(__dirname, '../../views'));
 app.set('view engine', 'hbs');
 
-let sess = {
-	secret: "fred",
-	name: "Fred-Session",
-	resave: false,
-	saveUninitialized: true,
-	cookie: {maxAge: 60000},
-}
-
 mongoose.connect('mongodb://localhost/auth');
 
 if (app.get('env') === 'production') {
 	app.set('trust proxy', 1) //trust first proxy
-	sess.cookie.secure = true //serve secure cookies (https)
 }
+
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-//app.use(session(sess));
 app.use(csrfProtection);
 app.use(authenticated(mongoose));
 
 countries(app);
-user_controller(app, mongoose);
+user_controller(app, mongoose, "/authentication");
 home_controller(app, mongoose);
 
 listen(app, PORT);

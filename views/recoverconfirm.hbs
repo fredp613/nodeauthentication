@@ -1,1 +1,13 @@
-<strong>password recovery confirmation page</strong>
+<form method="post" action="/authentication/recoverconfirm">
+
+{{#if error}}
+	<h3>error: {{error}}</h3>
+{{/if}}
+
+  <input type="hidden" name="_csrf" value={{csrfToken}} />
+  <input type="hidden" name="email" value={{email}} />
+  <input type="password" id="txtPassword" name="password" placeholder="password" required=true></input> 
+  <input type="password" id="txtPasswordConfirmation" name='passwordConfirm' placeholder="password confirmation" required=true></input>
+  <input type="submit" id="submit" value='Recover'></input>
+
+</form>

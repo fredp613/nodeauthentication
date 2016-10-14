@@ -4,65 +4,11 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-exports.default = function (router, mongoose) {
+exports.default = function (router, mongoose, rootPath) {
 
 	var User = (0, _models.UserModel)(mongoose);
-	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
-	//	let User = schema(mongoose, "User");
+
 	var saltRounds = 10;
-
-	router.get('/profile', function (req, res, next) {
-		User.findOne({
-			where: { email: req.body.user.email },
-			attributes: ['email']
-		}).then(function (user) {
-			if (!user) {
-				res.render('home', json({
-					success: false,
-					message: "Problem finding user",
-					user: null
-				}));
-			} else {
-				res.render('profile', json({
-					success: true,
-					message: "User found",
-					user: user
-				}));
-			}
-		});
-	});
-
-	router.put('/profile', function (req, res, next) {
-		User.findOne({
-			where: { email: req.body.user.email },
-			attributes: ['email', 'firstName', 'lastName']
-		}).then(function (user) {
-
-			if (!user) {
-				res.render('home', json({
-					success: false,
-					message: "Problem finding user",
-					user: null
-				}));
-			} else {
-				//UPDATE USER        
-				User.update({
-					firstName: req.body.user.firstName,
-					lastName: req.body.user.lastName
-				}, {
-					where: {
-						email: req.body.user.email
-					}
-				}).then(function (user) {
-					res.render('profile', json({
-						success: true,
-						message: "User UPDATED",
-						user: user
-					}));
-				});
-			}
-		});
-	});
 
 	router.get('/authentication/login', function (req, res) {
 		res.render('login', { title: "Login Page", csrfToken: req.csrfToken() });
@@ -145,7 +91,7 @@ exports.default = function (router, mongoose) {
 	router.post('/authentication/register', function (req, res, next) {
 		var password = req.body.password;
 		var passwordConfirm = req.body.passwordConfirm;
-		var email = req.body.email;
+		var email = req.body.email.trim().toLowerCase();
 		var firstName = req.body.firstName;
 		var lastName = req.body.lastName;
 		var IP = req.headers['x-forwarded-for'];
@@ -201,11 +147,6 @@ exports.default = function (router, mongoose) {
 												res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
 												(0, _email.sendEmail)("fredp613@gmail.com", "Registered", "Thank you for registering");
 												res.redirect('/authentication/home');
-												//res.render('home',{
-												//	success: true,
-												//	message: "Enjoy your token",
-												//	token: token
-												//});
 											}
 										});
 									}
@@ -226,13 +167,11 @@ exports.default = function (router, mongoose) {
 
 	router.get('/authentication/logout', function (req, res, next) {
 		res.clearCookie("Token");
-		//	   req.session.destroy((err)=>{
 		res.redirect('/authentication/login');
-		//	   });
 	});
 
 	router.delete('/authentication/delete', function (req, res, next) {
-		//clear cookies and or local storage  
+
 		db.User.destroy({
 			where: { email: req.body.user.email }
 		}).then(function (success) {
@@ -251,14 +190,16 @@ exports.default = function (router, mongoose) {
 	});
 
 	router.get('/authentication/recover', function (req, res, next) {
+		res.clearCookie("Token");
 		res.render('recover', { Title: "Recover Password", csrfToken: req.csrfToken() });
 	});
 
 	router.post('/authentication/recover', function (req, res, next) {
-		//send email and if email success alert user then show a form
-		var randomstring = Math.random().toString(36).slice(-8);
 
+		var randomstring = Math.random().toString(36).slice(-8);
 		var requestingEmail = req.body.email.trim().toLowerCase();
+		var urlForRecovery = "http://fredp613.com/authentication/recoverconfirm?email=" + requestingEmail + "&safestring=" + randomstring;
+		var encodedURI = encodeURIComponent(urlForRecovery);
 
 		User.findOne({ email: requestingEmail }, function (err, user) {
 			var errorMessage = "";
@@ -273,8 +214,7 @@ exports.default = function (router, mongoose) {
 			if (user) {
 				PasswordRecovery.remove({ email: requestingEmail }, function (err) {
 					if (err) {
-						res.render('recover', { error: "Something went wrong",
-							csrfToken: req.csrfToken() });
+						res.render('recover', { error: "Something went wrong", csrfToken: req.csrfToken() });
 					}
 					var newPasswordRecovery = new PasswordRecovery({
 						email: requestingEmail,
@@ -285,76 +225,59 @@ exports.default = function (router, mongoose) {
 							res.render('recover', { error: "something went wrong try again later",
 								csrfToken: req.csrfToken() });
 						} else {
-							(0, _email.sendEmail)("fredp613@gmail.com", "Password recovery", "temporary password is:" + randomstring);
-							res.redirect('/authentication/recoverconfirm');
+							(0, _email.sendEmail)("fredp613@gmail.com", "Password recovery", "click on the following link to reset your password:" + urlForRecovery);
+							res.render('recover', { status: "success", csrfToken: req.csrfToken() });
 						}
 					});
 				});
-			}
+			};
 		});
 	});
 
 	router.get('/authentication/recoverconfirm', function (req, res, next) {
-		res.render('recoverconfirm', { Title: "Confirm temporary password" });
+		console.log(req.query.email + "-" + req.query.safestring);
+		res.render('recoverconfirm', { title: "Confirm temporary password",
+			email: req.query.email, csrfToken: req.csrfToken() });
 	});
 
-	router.put('/authentication/recoverconfirm', function (req, res, next) {
+	router.post('/authentication/recoverconfirm', function (req, res, next) {
 
-		var paramTemp = req.body.user.tempPassword;
-		var paramPwd = req.body.user.password;
-		var paramPwdConfirm = req.body.user.passwordConfirmation;
-		var email = req.body.user.email;
+		var paramPwd = req.body.password;
+		var paramPwdConfirm = req.body.passwordConfirm;
+		var paramEmail = req.body.email;
 
-		db.PasswordRecovery.findOne({
-			where: { email: email }
-		}).then(function (pr) {
+		if (paramPwd !== paramPwdConfirm) {
+			return res.render('recoverconfirm', { title: "Confirm temporary password",
+				error: "passwords don't match, try again", csrfToken: req.csrfToken() });
+		}
+		PasswordRecovery.findOne({ email: paramEmail }, function (err, pr) {
+			if (err) {
+				return res.render('recoverconfirm', { title: "Confirm temporary password",
+					error: err.Message, csrfToken: req.csrfToken() });
+			}
 			if (!pr) {
-				res.json({
-					success: false,
-					message: "Something went wrong try again later"
-				});
-			} else {
-				var temp = pr.tempPassword;
-				if (paramTemp === temp) {
-					if (paramPwd === paramPwdConfirm) {
-
-						//UPDATE USER 
-						_bcrypt2.default.hash(paramPwd, saltRounds, function (err, hash) {
-
+				return res.render('recoverconfirm', { title: "Confirm temporary password", error: "somethign went wrong - not found", csrfToken: req.csrfToken() });
+			}
+			if (pr) {
+				_bcrypt2.default.hash(paramPwd, saltRounds, function (err, hash) {
+					User.findOne({ email: paramEmail }, function (err, user) {
+						if (err) {
+							return res.render('recoverconfrim', { error: "something went wrong", csrfToken: req.csrfToken() });
+						}
+						if (!user) {
+							return res.render('recoverconfirm', { error: "user not found", csrfToken: req.csrfToken() });
+						}
+						User.update(user, { password: hash }, null, function (err) {
 							if (err) {
-								res.json({
-									success: false,
-									message: "Something went wrong try again later"
-								});
-							} else {
-								db.User.update({
-									password: hash
-								}, {
-									where: {
-										email: req.body.user.email
-									}
-								}).then(function (user) {
-									db.PasswordRecovery.destroy({ where: { email: email } });
-									res.json({
-										success: true,
-										message: "recovered successfully",
-										user: user
-									});
+								return res.render('recoverconfirm', {
+									error: err.Message,
+									csrfToken: req.csrfToken()
 								});
 							}
+							res.redirect('/authentication/home');
 						});
-					} else {
-						res.json({
-							success: false,
-							message: "new passwords don't match"
-						});
-					}
-				} else {
-					res.json({
-						success: false,
-						message: "temp password incorrect"
 					});
-				}
+				});
 			}
 		});
 	});
@@ -368,10 +291,6 @@ var _bcrypt = require('bcrypt');
 
 var _bcrypt2 = _interopRequireDefault(_bcrypt);
 
-var _testclass = require('./testclass');
-
-var _testclass2 = _interopRequireDefault(_testclass);
-
 var _models = require('./models');
 
 var _email = require('./email');
@@ -379,5 +298,3 @@ var _email = require('./email');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 ;
-
-//import { schema } from './models';

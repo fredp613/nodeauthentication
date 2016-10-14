@@ -86,31 +86,22 @@ var parseForm = _bodyParser2.default.urlencoded({ extended: false });
 app.set('views', _path2.default.join(__dirname, '../../views'));
 app.set('view engine', 'hbs');
 
-var sess = {
-	secret: "fred",
-	name: "Fred-Session",
-	resave: false,
-	saveUninitialized: true,
-	cookie: { maxAge: 60000 }
-};
-
 _mongoose2.default.connect('mongodb://localhost/auth');
 
 if (app.get('env') === 'production') {
 	app.set('trust proxy', 1); //trust first proxy
-	sess.cookie.secure = true; //serve secure cookies (https)
 }
+
 app.use((0, _morgan2.default)('dev'));
 app.use(_bodyParser2.default.json());
 app.use(_bodyParser2.default.urlencoded({ extended: false }));
 app.use((0, _cookieParser2.default)());
 app.use(_express2.default.static(_path2.default.join(__dirname, 'public')));
-//app.use(session(sess));
 app.use(csrfProtection);
 app.use((0, _authenticate2.default)(_mongoose2.default));
 
 (0, _countries2.default)(app);
-(0, _user_controller2.default)(app, _mongoose2.default);
+(0, _user_controller2.default)(app, _mongoose2.default, "/authentication");
 (0, _home_controller2.default)(app, _mongoose2.default);
 
 (0, _server2.default)(app, PORT);
