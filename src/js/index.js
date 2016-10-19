@@ -24,16 +24,6 @@ let app = express(),
 let csrfProtection = csrf({cookie:true});
 let parseForm = bodyParser.urlencoded({extended: false});
 
-
-//let api = createApiRouter()
-//function createApiRouter() {
-//	var router = new express.Router();
-//	router.post...
-//	return router
-//}
-//app.use('/api', api) <--load api routes before eveyrthing below so it ignores csrf etc.
-
-
 //view engine setup
 app.set('views', path.join(__dirname, '../../views'));
 app.set('view engine', 'hbs');

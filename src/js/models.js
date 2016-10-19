@@ -21,7 +21,6 @@ export function PasswordRecoveryModel(mongoose) {
 }
 
 
-
 /**
 class Model {
 	constructor(mongoose, collectionName) {
