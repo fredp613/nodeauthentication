@@ -73,15 +73,6 @@ var app = (0, _express2.default)(),
 var csrfProtection = (0, _csurf2.default)({ cookie: true });
 var parseForm = _bodyParser2.default.urlencoded({ extended: false });
 
-//let api = createApiRouter()
-//function createApiRouter() {
-//	var router = new express.Router();
-//	router.post...
-//	return router
-//}
-//app.use('/api', api) <--load api routes before eveyrthing below so it ignores csrf etc.
-
-
 //view engine setup
 app.set('views', _path2.default.join(__dirname, '../../views'));
 app.set('view engine', 'hbs');
