@@ -90,8 +90,9 @@ app.use(_express2.default.static(_path2.default.join(__dirname, 'public')));
 app.use(csrfProtection);
 app.use((0, _authenticate2.default)(_mongoose2.default));
 
-(0, _countries2.default)(app);
 (0, _user_controller2.default)(app, _mongoose2.default, "/authentication");
+user_api_controller(app, _mongoose2.default, "/authentication");
+
 (0, _home_controller2.default)(app, _mongoose2.default);
 
 (0, _server2.default)(app, PORT);

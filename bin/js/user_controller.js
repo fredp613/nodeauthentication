@@ -8,10 +8,11 @@ exports.default = function (router, mongoose, rootPath) {
 
 	var User = (0, _models.UserModel)(mongoose);
 	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
+	var loginRoute = rootPath ? rootPath + "/login" : "/login";
 
 	var saltRounds = 10;
 
-	router.get('/authentication/login', function (req, res) {
+	router.get(loginRoute, function (req, res) {
 		res.render('login', { title: "Login Page", csrfToken: req.csrfToken() });
 	});
 

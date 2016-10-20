@@ -8,10 +8,12 @@ export default function (router, mongoose, rootPath) {
 	
 	let User = UserModel(mongoose);
 	let PasswordRecovery = PasswordRecoveryModel(mongoose);
+	let loginRoute = rootPath ? (rootPath + "/login") : "/login";
+
 
 	const saltRounds = 10;
 
-	router.get('/authentication/login', (req, res) => {
+	router.get(loginRoute, (req, res) => {
 		res.render('login', {title: "Login Page", csrfToken: req.csrfToken()});
 	});
 
