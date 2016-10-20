@@ -43,6 +43,8 @@ plan.local(function(local) {
   var filesToCopy = local.exec('git ls-files', {silent: true});
   // rsync files to all the destination's hosts
   local.transfer(filesToCopy, '/tmp/' + tmpDir);
+  local.log('Copy env to remote hosts');
+  local.transfer('.env', '/tmp/' + tmpDir);
 });
 
 // run commands on remote hosts (destinations)
@@ -56,9 +58,8 @@ plan.remote(function(remote) {
 
   remote.log('Reload application');
   remote.sudo('ln -snf ~/' + tmpDir + ' ~/'+appName, {user: username});
-  remote.sudo('cp .env /home/deploy/'+appName);
   remote.exec('sudo restart nodeauthentication');
 //  remote.exec('node /home/deploy/node-app/bin/index.js');
 //  remote.exec('forever stop ~/'+appName+'/'+startFile, {failsafe: true});
- // remote.exec('forever start ~/'+appName+'/'+startFile);
-});
+// remote.exec('forever start ~/'+appName+'/'+startFile);
+  });

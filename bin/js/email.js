@@ -31,12 +31,14 @@ function sendEmail(recipient, subject, content) {
 
 	transporter.sendMail(mailOptions, function (error, info) {
 		if (error) {
+			console.log("error sending email", error);
 			return error;
 			/**res.json({
      success: false,
      reponse: error,
    })**/
 		} else {
+			console.log('no error', info.response);
 			return info.response;
 			/**res.json({
      success: true,
