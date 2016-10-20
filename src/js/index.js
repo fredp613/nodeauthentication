@@ -39,7 +39,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(csrfProtection);
-app.use(authenticated(mongoose));
+//app.use(authenticated(mongoose));
 
 user_controller(app, mongoose);
 user_api_controller(app, mongoose, "/authentication");

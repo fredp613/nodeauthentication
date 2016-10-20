@@ -5,11 +5,16 @@ import { PasswordRecoveryModel } from './models';
 import { sendEmail } from './email';
 
 export default function (router, mongoose, rootPath) {
+    
+    router.use(authenticated(mongoose));
 	
 	let User = UserModel(mongoose);
 	let PasswordRecovery = PasswordRecoveryModel(mongoose);
 	let loginRoute = rootPath ? (rootPath + "/login") : "/login";
-
+	let logoutRoute = rootPath ? (rootPath + "/logout") : "/logout";
+	let registerRoute = rootPath ? (rootPath + "register") : "register";
+	let recoverRoute = rootPath ? (rootPath + "recover") : "recover";
+	let recoverConfirmRoute = rootPath ? (rootPath + "recoverconfirm") : "recoverconfirm";
 
 	const saltRounds = 10;
 
@@ -17,7 +22,7 @@ export default function (router, mongoose, rootPath) {
 		res.render('login', {title: "Login Page", csrfToken: req.csrfToken()});
 	});
 
-	router.post('/authentication/login', (req, res) => {
+	router.post(loginRoute, (req, res) => {
 
 		const param_email = req.body.email.trim().toLowerCase();
 		const param_password = req.body.password;
@@ -69,7 +74,7 @@ export default function (router, mongoose, rootPath) {
 									console.log("we should be good");
 									res.cookie('Token', token,
 									 {maxAge: 3600000, httpOnly: true});
-									res.redirect("/authentication/home")
+									res.redirect("/authentucation/home")
 								}
 							})
 						}						
@@ -93,11 +98,11 @@ export default function (router, mongoose, rootPath) {
 		  }                             
 		}); 
 	}
-	router.get('/authentication/register', (req, res)=> {
+	router.get(registerRoute, (req, res)=> {
 		res.render('register', {title:"register page", csrfToken: req.csrfToken()})
 	});
 
-	router.post('/authentication/register', (req, res, next) => {
+	router.post(registerRoute, (req, res, next) => {
 	  const password = req.body.password
 	  const passwordConfirm = req.body.passwordConfirm
 	  const email = req.body.email.trim().toLowerCase();
@@ -174,7 +179,7 @@ export default function (router, mongoose, rootPath) {
 		}
 	});
 
-	router.get('/authentication/logout', (req, res, next) => {
+	router.get(logoutRoute, (req, res, next) => {
 	   res.clearCookie("Token");
 		   res.redirect('/authentication/login');
 	})
@@ -198,12 +203,12 @@ export default function (router, mongoose, rootPath) {
 		})    
 	})
 
-	router.get('/authentication/recover', (req, res, next)=>{
+	router.get(recoverRoute, (req, res, next)=>{
 	    res.clearCookie("Token");
 		res.render('recover', {Title: "Recover Password", csrfToken: req.csrfToken()});
 	});
 
-	router.post('/authentication/recover', (req, res, next) => {
+	router.post(recoverRoute, (req, res, next) => {
 
 	  const randomstring = Math.random().toString(36).slice(-8);
 	  const requestingEmail = req.body.email.trim().toLowerCase();
@@ -253,13 +258,13 @@ export default function (router, mongoose, rootPath) {
 		}); 
 	})
 
-	router.get('/authentication/recoverconfirm', (req, res, next) => {
+	router.get(recoverConfirmRoute, (req, res, next) => {
 		console.log(req.query.email + "-" + req.query.safestring);
 		res.render('recoverconfirm', {title: "Confirm temporary password",
 			email: req.query.email, csrfToken: req.csrfToken()});
 	});
 	  
-	router.post('/authentication/recoverconfirm', (req, res, next) => {
+	router.post(recoverConfirmRoute, (req, res, next) => {
 	  
 	  let paramPwd = req.body.password;
 	  let paramPwdConfirm = req.body.passwordConfirm;
