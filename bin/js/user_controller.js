@@ -7,6 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = function (router, mongoose, rootPath) {
 
 	var User = (0, _models.UserModel)(mongoose);
+	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
 
 	var saltRounds = 10;
 

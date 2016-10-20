@@ -1,11 +1,13 @@
 import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt';
 import { UserModel } from './models';
+import { PasswordRecoveryModel } from './models';
 import { sendEmail } from './email';
 
 export default function (router, mongoose, rootPath) {
 	
 	let User = UserModel(mongoose);
+	let PasswordRecovery = PasswordRecoveryModel(mongoose);
 
 	const saltRounds = 10;
 
