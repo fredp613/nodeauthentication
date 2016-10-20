@@ -6,9 +6,15 @@ Object.defineProperty(exports, "__esModule", {
 
 exports.default = function (router, mongoose, rootPath) {
 
+	router.use((0, _authenticate2.default)(mongoose));
+
 	var User = (0, _models.UserModel)(mongoose);
 	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
 	var loginRoute = rootPath ? rootPath + "/login" : "/login";
+	var logoutRoute = rootPath ? rootPath + "/logout" : "/logout";
+	var registerRoute = rootPath ? rootPath + "register" : "register";
+	var recoverRoute = rootPath ? rootPath + "recover" : "recover";
+	var recoverConfirmRoute = rootPath ? rootPath + "recoverconfirm" : "recoverconfirm";
 
 	var saltRounds = 10;
 
@@ -16,7 +22,7 @@ exports.default = function (router, mongoose, rootPath) {
 		res.render('login', { title: "Login Page", csrfToken: req.csrfToken() });
 	});
 
-	router.post('/authentication/login', function (req, res) {
+	router.post(loginRoute, function (req, res) {
 
 		var param_email = req.body.email.trim().toLowerCase();
 		var param_password = req.body.password;
@@ -67,7 +73,7 @@ exports.default = function (router, mongoose, rootPath) {
 									} else {
 										console.log("we should be good");
 										res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
-										res.redirect("/authentication/home");
+										res.redirect("/authentucation/home");
 									}
 								});
 							}
@@ -86,11 +92,11 @@ exports.default = function (router, mongoose, rootPath) {
 			}
 		});
 	}
-	router.get('/authentication/register', function (req, res) {
+	router.get(registerRoute, function (req, res) {
 		res.render('register', { title: "register page", csrfToken: req.csrfToken() });
 	});
 
-	router.post('/authentication/register', function (req, res, next) {
+	router.post(registerRoute, function (req, res, next) {
 		var password = req.body.password;
 		var passwordConfirm = req.body.passwordConfirm;
 		var email = req.body.email.trim().toLowerCase();
@@ -167,7 +173,7 @@ exports.default = function (router, mongoose, rootPath) {
 		}
 	});
 
-	router.get('/authentication/logout', function (req, res, next) {
+	router.get(logoutRoute, function (req, res, next) {
 		res.clearCookie("Token");
 		res.redirect('/authentication/login');
 	});
@@ -191,12 +197,12 @@ exports.default = function (router, mongoose, rootPath) {
 		});
 	});
 
-	router.get('/authentication/recover', function (req, res, next) {
+	router.get(recoverRoute, function (req, res, next) {
 		res.clearCookie("Token");
 		res.render('recover', { Title: "Recover Password", csrfToken: req.csrfToken() });
 	});
 
-	router.post('/authentication/recover', function (req, res, next) {
+	router.post(recoverRoute, function (req, res, next) {
 
 		var randomstring = Math.random().toString(36).slice(-8);
 		var requestingEmail = req.body.email.trim().toLowerCase();
@@ -236,13 +242,13 @@ exports.default = function (router, mongoose, rootPath) {
 		});
 	});
 
-	router.get('/authentication/recoverconfirm', function (req, res, next) {
+	router.get(recoverConfirmRoute, function (req, res, next) {
 		console.log(req.query.email + "-" + req.query.safestring);
 		res.render('recoverconfirm', { title: "Confirm temporary password",
 			email: req.query.email, csrfToken: req.csrfToken() });
 	});
 
-	router.post('/authentication/recoverconfirm', function (req, res, next) {
+	router.post(recoverConfirmRoute, function (req, res, next) {
 
 		var paramPwd = req.body.password;
 		var paramPwdConfirm = req.body.passwordConfirm;
@@ -296,6 +302,10 @@ var _bcrypt2 = _interopRequireDefault(_bcrypt);
 var _models = require('./models');
 
 var _email = require('./email');
+
+var _authenticate = require('./authenticate');
+
+var _authenticate2 = _interopRequireDefault(_authenticate);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 

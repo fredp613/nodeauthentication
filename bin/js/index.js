@@ -48,10 +48,6 @@ var _home_controller = require('./home_controller');
 
 var _home_controller2 = _interopRequireDefault(_home_controller);
 
-var _authenticate = require('./authenticate');
-
-var _authenticate2 = _interopRequireDefault(_authenticate);
-
 var _dotenv = require('dotenv');
 
 var _dotenv2 = _interopRequireDefault(_dotenv);
@@ -66,6 +62,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 _dotenv2.default.config();
 //
+
+//import authenticated from './authenticate';
 var app = (0, _express2.default)(),
     PORT = "3006";
 //set up for CSRF proection
@@ -88,10 +86,12 @@ app.use(_bodyParser2.default.urlencoded({ extended: false }));
 app.use((0, _cookieParser2.default)());
 app.use(_express2.default.static(_path2.default.join(__dirname, 'public')));
 app.use(csrfProtection);
-app.use((0, _authenticate2.default)(_mongoose2.default));
+//app.use(authenticated(mongoose));
 
-(0, _user_controller2.default)(app, _mongoose2.default, "/authentication");
-user_api_controller(app, _mongoose2.default, "/authentication");
+var customOpenPaths = ["/authentication/about"];
+(0, _user_controller2.default)(app, _mongoose2.default, custonmOpenPaths);
+//user_api_controller(app, mongoose, "/authentication");
+
 
 (0, _home_controller2.default)(app, _mongoose2.default);
 

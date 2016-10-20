@@ -11,11 +11,12 @@ var _jsonwebtoken2 = _interopRequireDefault(_jsonwebtoken);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function isAuthenticated(mongoose) {
+function isAuthenticated(mongoose, customOpenPaths) {
 
 	return function (req, res, next) {
 
-		var openPaths = ["/authentication/login", "/authentication/recover", "/authentication/register", "/authentication/recoverconfirm"];
+		var userAuthOpenPaths = ["/authentication/login", "/authentication/recover", "/authentication/register", "/authentication/recoverconfirm"];
+		var openPaths = userAuthOpenPaths.concat(customOpenPaths);
 		if (!req.cookies.Token && !openPaths.includes(req.path)) {
 			req.isAuthenticated = false;
 			res.redirect('/authentication/login');

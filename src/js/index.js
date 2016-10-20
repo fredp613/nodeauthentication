@@ -10,7 +10,7 @@ import session from 'express-session';
 import mongoose from 'mongoose';
 import user_controller from './user_controller';
 import home_controller from './home_controller';
-import authenticated from './authenticate';
+//import authenticated from './authenticate';
 import dotenv from 'dotenv';
 import 'babel-polyfill';
 import csrf from 'csurf';
@@ -41,8 +41,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(csrfProtection);
 //app.use(authenticated(mongoose));
 
-user_controller(app, mongoose);
-user_api_controller(app, mongoose, "/authentication");
+let customOpenPaths = ["/authentication/about"]
+user_controller(app, mongoose,custonmOpenPaths);
+//user_api_controller(app, mongoose, "/authentication");
 
 
 home_controller(app, mongoose);

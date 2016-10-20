@@ -3,9 +3,10 @@ import bcrypt from 'bcrypt';
 import { UserModel } from './models';
 import { PasswordRecoveryModel } from './models';
 import { sendEmail } from './email';
+import authenticated from './authenticate';
 
 export default function (router, mongoose, rootPath) {
-    
+      
     router.use(authenticated(mongoose));
 	
 	let User = UserModel(mongoose);

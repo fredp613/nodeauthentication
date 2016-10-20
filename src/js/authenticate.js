@@ -1,14 +1,15 @@
 
 import jwt from "jsonwebtoken";
 
-export default function isAuthenticated(mongoose) { 
+export default function isAuthenticated(mongoose, customOpenPaths) { 
 
 	return function(req, res, next) {
 	
-		let openPaths = ["/authentication/login",
+	  let userAuthOpenPaths = ["/authentication/login",
 						"/authentication/recover", 
 						"/authentication/register", 
 						"/authentication/recoverconfirm"]
+	 let openPaths = userAuthOpenPaths.concat(customOpenPaths);
 		if (!req.cookies.Token && !(openPaths.includes(req.path))) {
 			req.isAuthenticated = false;
 			res.redirect('/authentication/login');
