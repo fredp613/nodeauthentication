@@ -41,7 +41,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(csrfProtection);
 app.use(authenticated(mongoose));
 
-user_controller(app, mongoose, "/authentication");
+user_controller(app, mongoose);
 user_api_controller(app, mongoose, "/authentication");
 
 
