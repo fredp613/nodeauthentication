@@ -4,17 +4,17 @@ Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-exports.default = function (router, mongoose, rootPath) {
+exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 
-	router.use((0, _authenticate2.default)(mongoose));
+	router.use((0, _authenticate2.default)(mongoose, customOpenPaths));
 
 	var User = (0, _models.UserModel)(mongoose);
 	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
 	var loginRoute = rootPath ? rootPath + "/login" : "/login";
 	var logoutRoute = rootPath ? rootPath + "/logout" : "/logout";
-	var registerRoute = rootPath ? rootPath + "register" : "register";
-	var recoverRoute = rootPath ? rootPath + "recover" : "recover";
-	var recoverConfirmRoute = rootPath ? rootPath + "recoverconfirm" : "recoverconfirm";
+	var registerRoute = rootPath ? rootPath + "/register" : "/register";
+	var recoverRoute = rootPath ? rootPath + "/recover" : "/recover";
+	var recoverConfirmRoute = rootPath ? rootPath + "/recoverconfirm" : "/recoverconfirm";
 
 	var saltRounds = 10;
 

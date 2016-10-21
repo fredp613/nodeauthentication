@@ -42,7 +42,7 @@ app.use(csrfProtection);
 //app.use(authenticated(mongoose));
 
 let customOpenPaths = ["/authentication/about"]
-user_controller(app, mongoose,custonmOpenPaths);
+user_controller(app, mongoose,customOpenPaths, "/authentication");
 //user_api_controller(app, mongoose, "/authentication");
 
 

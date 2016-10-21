@@ -17,6 +17,7 @@ function isAuthenticated(mongoose, customOpenPaths) {
 
 		var userAuthOpenPaths = ["/authentication/login", "/authentication/recover", "/authentication/register", "/authentication/recoverconfirm"];
 		var openPaths = userAuthOpenPaths.concat(customOpenPaths);
+		console.log(openPaths);
 		if (!req.cookies.Token && !openPaths.includes(req.path)) {
 			req.isAuthenticated = false;
 			res.redirect('/authentication/login');

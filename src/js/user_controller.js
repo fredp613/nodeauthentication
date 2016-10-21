@@ -5,17 +5,17 @@ import { PasswordRecoveryModel } from './models';
 import { sendEmail } from './email';
 import authenticated from './authenticate';
 
-export default function (router, mongoose, rootPath) {
+export default function (router, mongoose,customOpenPaths,rootPath) {
       
-    router.use(authenticated(mongoose));
+    router.use(authenticated(mongoose, customOpenPaths));
 	
 	let User = UserModel(mongoose);
 	let PasswordRecovery = PasswordRecoveryModel(mongoose);
 	let loginRoute = rootPath ? (rootPath + "/login") : "/login";
 	let logoutRoute = rootPath ? (rootPath + "/logout") : "/logout";
-	let registerRoute = rootPath ? (rootPath + "register") : "register";
-	let recoverRoute = rootPath ? (rootPath + "recover") : "recover";
-	let recoverConfirmRoute = rootPath ? (rootPath + "recoverconfirm") : "recoverconfirm";
+	let registerRoute = rootPath ? (rootPath + "/register") : "/register";
+	let recoverRoute = rootPath ? (rootPath + "/recover") : "/recover";
+	let recoverConfirmRoute = rootPath ? (rootPath + "/recoverconfirm") : "/recoverconfirm";
 
 	const saltRounds = 10;
 

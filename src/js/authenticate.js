@@ -5,11 +5,12 @@ export default function isAuthenticated(mongoose, customOpenPaths) {
 
 	return function(req, res, next) {
 	
-	  let userAuthOpenPaths = ["/authentication/login",
+	 	let userAuthOpenPaths = ["/authentication/login",
 						"/authentication/recover", 
 						"/authentication/register", 
 						"/authentication/recoverconfirm"]
-	 let openPaths = userAuthOpenPaths.concat(customOpenPaths);
+		let openPaths = userAuthOpenPaths.concat(customOpenPaths);
+		console.log(openPaths);
 		if (!req.cookies.Token && !(openPaths.includes(req.path))) {
 			req.isAuthenticated = false;
 			res.redirect('/authentication/login');
