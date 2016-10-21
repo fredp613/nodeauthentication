@@ -73,7 +73,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 									} else {
 										console.log("we should be good");
 										res.cookie('Token', token, { maxAge: 3600000, httpOnly: true });
-										res.redirect("/authentucation/home");
+										res.redirect("/authentication/home");
 									}
 								});
 							}
