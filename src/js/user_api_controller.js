@@ -18,6 +18,9 @@ export default function (router, mongoose,customOpenPaths,rootPath) {
 	let recoverConfirmRoute = rootPath ? (rootPath + "/recoverconfirm") : "/recoverconfirm";
 
 	const saltRounds = 10;
+	router.get(loginRoute, (req, res) => {
+		res.json({success:true})
+	});
 
 	router.post(loginRoute, (req, res) => {
 
