@@ -15,12 +15,12 @@ function isAuthenticated(mongoose, customOpenPaths) {
 
 	return function (req, res, next) {
 
-		var userAuthOpenPaths = ["/authentication/login", "/authentication/recover", "/authentication/register", "/authentication/recoverconfirm"];
+		var userAuthOpenPaths = ["/login", "/recover", "/register", "/recoverconfirm"];
 		var openPaths = userAuthOpenPaths.concat(customOpenPaths);
 		console.log(openPaths);
 		if (!req.cookies.Token && !openPaths.includes(req.path)) {
 			req.isAuthenticated = false;
-			res.redirect('/authentication/login');
+			res.redirect('/login');
 		} else {
 			//get current user, validate token (ensure that it exists and is valid)
 			if (req.cookies.Token !== undefined) {
@@ -37,7 +37,7 @@ function isAuthenticated(mongoose, customOpenPaths) {
 					console.log("is not auth");
 					req.isAuthenticated = false;
 					if (!openPaths.includes(req.path)) {
-						res.redirect('/authentication/login');
+						res.redirect('/login');
 					} else {
 						next();
 					}
