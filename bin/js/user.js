@@ -1,34 +1,92 @@
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _mongoose = require("mongoose");
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+var _mongoose2 = _interopRequireDefault(_mongoose);
 
-var User = function () {
-	function User(mongoose) {
-		_classCallCheck(this, User);
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-		this.mongoose = mongoose;
+//let mongoose = require('mongoose');
+
+var Schema = _mongoose2.default.Schema;
+
+var User = new _mongoose2.default.Schema({
+	firstName: String,
+	lastName: String,
+	email: { type: String, unique: true },
+	password: String,
+	IPs: String
+});
+exports.default = _mongoose2.default.model('User', User);
+/**
+class User extends mongoose.Schema {
+	constructor() { 
+		super({
+			firstName: String,
+			lastName: String,
+			email: {type: String, unique: true},
+			password: String,
+			IPs: String
+		})
 	}
 
-	_createClass(User, [{
-		key: 'initializeUser',
-		value: function initializeUser() {
-			var userSchema = {
+}
+export default mongoose.model('User', new User);
+**/
+/**
+export function User() {
+
+	let user = mongoose.model('User', new Schema({
+		firstName: String,
+		lastName: String,
+		email: {type: String, unique: true},
+		password: String,
+		IPs: String,
+	}));
+	return user;
+}
+
+export function PasswordRecovery() {
+
+	let pwr = mongoose.model('PasswordRecovery', new Schema({
+		email: String,
+		tempPassword: String,
+	}));
+	return pwr;
+
+}
+**/
+
+/**
+class Model {
+	constructor(mongoose, collectionName) {
+		this.mongoose = mongoose;
+		this.collectionName = collectionName
+	}
+
+    getModelSchema() {
+		let Schema = this.mongoose.Schema;
+		if (this.collectionName == 'User') {
+			let user = this.mongoose.model(this.collectionName, new Schema({
 				firstName: String,
 				lastName: String,
-				email: { type: String, unique: true },
+				email: {type: String, unique: true},
 				password: String
-			};
-			return this.mongoose.model('User', userSchema);
-		}
-	}]);
+			}));
+			return user;
+		} 
+		//return undefined;
+	}
 
-	return User;
-}();
+}
 
-exports.default = User;
+let schema = (mongoose, collectionName) => {
+	let model = new Model(mongoose, collectionName);
+	return model.getModelSchema();
+}
+export { schema };
+**/

@@ -1,5 +1,35 @@
-export function UserModel(mongoose) {
-	let Schema = mongoose.Schema;
+import mongoose from "mongoose"
+//let mongoose = require('mongoose');
+
+let Schema = mongoose.Schema;
+
+
+const User = new mongoose.Schema({
+	firstName: String,
+	lastName: String,
+	email: {type: String, unique: true},
+	password: String,
+	IPs: String
+});
+export default mongoose.model('User', User);
+/**
+class User extends mongoose.Schema {
+	constructor() { 
+		super({
+			firstName: String,
+			lastName: String,
+			email: {type: String, unique: true},
+			password: String,
+			IPs: String
+		})
+	}
+
+}
+export default mongoose.model('User', new User);
+**/
+/**
+export function User() {
+
 	let user = mongoose.model('User', new Schema({
 		firstName: String,
 		lastName: String,
@@ -10,8 +40,8 @@ export function UserModel(mongoose) {
 	return user;
 }
 
-export function PasswordRecoveryModel(mongoose) {
-	let Schema = mongoose.Schema;
+export function PasswordRecovery() {
+
 	let pwr = mongoose.model('PasswordRecovery', new Schema({
 		email: String,
 		tempPassword: String,
@@ -19,7 +49,7 @@ export function PasswordRecoveryModel(mongoose) {
 	return pwr;
 
 }
-
+**/
 
 /**
 class Model {

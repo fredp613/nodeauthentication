@@ -44,6 +44,10 @@ var _user_controller = require('./user_controller');
 
 var _user_controller2 = _interopRequireDefault(_user_controller);
 
+var _user_api_controller = require('./user_api_controller');
+
+var _user_api_controller2 = _interopRequireDefault(_user_api_controller);
+
 var _home_controller = require('./home_controller');
 
 var _home_controller2 = _interopRequireDefault(_home_controller);
@@ -90,7 +94,7 @@ app.use(csrfProtection);
 
 var customOpenPaths = ["/authentication/about"];
 (0, _user_controller2.default)(app, _mongoose2.default, customOpenPaths, "/authentication");
-user_api_controller(app, _mongoose2.default, customOpenPaths, "/authentication");
+(0, _user_api_controller2.default)(app, _mongoose2.default, customOpenPaths, "/authentication");
 //user_api_controller(app, mongoose, "/authentication");
 
 

@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from 'bcrypt';
-import { UserModel } from './models';
-import { PasswordRecoveryModel } from './models';
+import User from './user';
+import PasswordRecovery from './passwordrecovery';
 import { sendEmail } from './email';
 import authenticated from './authenticate';
 
@@ -9,8 +9,11 @@ export default function (router, mongoose,customOpenPaths,rootPath) {
       
     router.use(authenticated(mongoose, customOpenPaths));
 	
-	let User = UserModel(mongoose);
-	let PasswordRecovery = PasswordRecoveryModel(mongoose);
+	//let User = UserModel(mongoose);
+	//let User = UserModel();
+	//let PasswordRecovery = PasswordRecoveryModel(mongoose);
+	//let PasswordRecovery = PasswordRecoveryModel();
+	
 	let loginRoute = rootPath ? (rootPath + "/login") : "/login";
 	let logoutRoute = rootPath ? (rootPath + "/logout") : "/logout";
 	let registerRoute = rootPath ? (rootPath + "/register") : "/register";

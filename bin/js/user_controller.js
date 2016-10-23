@@ -8,8 +8,11 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 
 	router.use((0, _authenticate2.default)(mongoose, customOpenPaths));
 
-	var User = (0, _models.UserModel)(mongoose);
-	var PasswordRecovery = (0, _models.PasswordRecoveryModel)(mongoose);
+	//let User = UserModel(mongoose);
+	//let User = UserModel();
+	//let PasswordRecovery = PasswordRecoveryModel(mongoose);
+	//let PasswordRecovery = PasswordRecoveryModel();
+
 	var loginRoute = rootPath ? rootPath + "/login" : "/login";
 	var logoutRoute = rootPath ? rootPath + "/logout" : "/logout";
 	var registerRoute = rootPath ? rootPath + "/register" : "/register";
@@ -28,7 +31,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 		var param_password = req.body.password;
 		var errorMessage = "";
 
-		User.findOne({ email: param_email }, function (err, user) {
+		_user2.default.findOne({ email: param_email }, function (err, user) {
 			var errorMessage = "";
 			var IP = req.headers['x-forwarded-for'];
 			if (err) {
@@ -118,7 +121,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 						token: null
 					});
 				} else {
-					User.findOne({
+					_user2.default.findOne({
 						email: email,
 						password: hash,
 						firstName: firstName,
@@ -126,7 +129,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 					}, function (user) {
 						if (!user) {
 							(function () {
-								var newUser = new User({
+								var newUser = new _user2.default({
 									email: email,
 									password: hash,
 									firstName: firstName,
@@ -209,7 +212,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 		var urlForRecovery = "http://fredp613.com/authentication/recoverconfirm?email=" + requestingEmail + "&safestring=" + randomstring;
 		var encodedURI = encodeURIComponent(urlForRecovery);
 
-		User.findOne({ email: requestingEmail }, function (err, user) {
+		_user2.default.findOne({ email: requestingEmail }, function (err, user) {
 			var errorMessage = "";
 			if (err) {
 				errorMessage = err.Message;
@@ -220,11 +223,11 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 				res.render('recover', { error: errorMessage, csrfToken: req.csrfToken() });
 			}
 			if (user) {
-				PasswordRecovery.remove({ email: requestingEmail }, function (err) {
+				_passwordrecovery2.default.remove({ email: requestingEmail }, function (err) {
 					if (err) {
 						res.render('recover', { error: "Something went wrong", csrfToken: req.csrfToken() });
 					}
-					var newPasswordRecovery = new PasswordRecovery({
+					var newPasswordRecovery = new _passwordrecovery2.default({
 						email: requestingEmail,
 						tempPassword: randomstring
 					});
@@ -258,7 +261,7 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 			return res.render('recoverconfirm', { title: "Confirm temporary password",
 				error: "passwords don't match, try again", csrfToken: req.csrfToken() });
 		}
-		PasswordRecovery.findOne({ email: paramEmail }, function (err, pr) {
+		_passwordrecovery2.default.findOne({ email: paramEmail }, function (err, pr) {
 			if (err) {
 				return res.render('recoverconfirm', { title: "Confirm temporary password",
 					error: err.Message, csrfToken: req.csrfToken() });
@@ -268,14 +271,14 @@ exports.default = function (router, mongoose, customOpenPaths, rootPath) {
 			}
 			if (pr) {
 				_bcrypt2.default.hash(paramPwd, saltRounds, function (err, hash) {
-					User.findOne({ email: paramEmail }, function (err, user) {
+					_user2.default.findOne({ email: paramEmail }, function (err, user) {
 						if (err) {
 							return res.render('recoverconfrim', { error: "something went wrong", csrfToken: req.csrfToken() });
 						}
 						if (!user) {
 							return res.render('recoverconfirm', { error: "user not found", csrfToken: req.csrfToken() });
 						}
-						User.update(user, { password: hash }, null, function (err) {
+						_user2.default.update(user, { password: hash }, null, function (err) {
 							if (err) {
 								return res.render('recoverconfirm', {
 									error: err.Message,
@@ -299,7 +302,13 @@ var _bcrypt = require('bcrypt');
 
 var _bcrypt2 = _interopRequireDefault(_bcrypt);
 
-var _models = require('./models');
+var _user = require('./user');
+
+var _user2 = _interopRequireDefault(_user);
+
+var _passwordrecovery = require('./passwordrecovery');
+
+var _passwordrecovery2 = _interopRequireDefault(_passwordrecovery);
 
 var _email = require('./email');
 

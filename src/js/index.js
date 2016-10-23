@@ -9,6 +9,7 @@ import bodyParser from 'body-parser';
 import session from 'express-session';
 import mongoose from 'mongoose';
 import user_controller from './user_controller';
+import user_api_controller from './user_api_controller';
 import home_controller from './home_controller';
 //import authenticated from './authenticate';
 import dotenv from 'dotenv';
