@@ -92,7 +92,7 @@ app.use(_express2.default.static(_path2.default.join(__dirname, 'public')));
 app.use(csrfProtection);
 //app.use(authenticated(mongoose));
 
-var customOpenPaths = ["/about"];
+var customOpenPaths = ["/about", "/"];
 (0, _user_controller2.default)(app, _mongoose2.default, customOpenPaths, null);
 (0, _user_api_controller2.default)(app, _mongoose2.default, customOpenPaths, null);
 //user_api_controller(app, mongoose, "/authentication");
